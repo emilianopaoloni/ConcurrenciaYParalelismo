@@ -1,0 +1,25 @@
+{PMA:
+ 1. Suponga que N personas llegan a la cola de un banco. Para atender a las personas existen 2 empleados que van atendiendo de a una y por orden de llegada a las personas.  }
+
+//las personas pueden ser atendidas por CUALQUIER empleado --> se usa un solo canal
+
+chan Cola(int); //un canal general para avisar que estas esperando
+chan Atencion[N](int); //un canal privado para que el empleado le indique a que oficina ir
+
+
+Process Persona[id: 0..N-1] {
+  int oficina; //numero de ofi que lo atienden
+  send Cola (id); //la persona va a la cola a la espera que la atiendan
+  receive Atencion[id] (oficina); //recibe el numero de caja que lo atiende
+  -- se dirige a la oficina      
+} 
+
+Process Empleado[id: 0..1] {
+  int idC; //id de cliente
+   
+  while (true) {
+     receive Cola (idC); //el empleado espera que haya alguien en la cola, y lo atiende
+     send Atencion[idC] (id); //le avisa que se dirija a su oficina
+     atender();    
+   }
+} 
