@@ -1,0 +1,52 @@
+{PMA 2. Se desea modelar el funcionamiento de un banco en el cual existen 5 cajas para realizar pagos. Existen P personas que desean pagar. Para esto cada una selecciona la caja donde hay menos personas esperando, una vez seleccionada espera a ser atendido.  
+NOTA: maximizando la concurrencia. }
+
+Chan cola[5](int); //un canal de espera por caja
+Chan solicitarMínimo(int); //canal para solicitar mínimo al coordinador
+Chan enviarMinimo[P](int); //canal para enviar caja con menos personas
+Chan fin[P](string); //canal para avisarle al cliente que finalizo la compra 
+Chan atendí(int); //para que la caja le avise al coordinador cuando atiende a cliente
+
+Process Persona [id: 0..P-1] {
+    int min; //min es la cola con menos personas esperando
+    string resultado;
+    send solicitarMinimo(id);
+    receive enviarMinimo[id](min); //espera que le envíen el nro de cola
+    send cola[min](id); //se encola en la cola especifica
+    receive atencion[min](resultado); //espera ser atendido
+    --lo atienden
+    receive fin[id](resultado); //espera que finalice la compra 
+}
+
+Process Coordinador { //le da al cliente la caja con menos personas
+   int esperando[5]; //contiene la cantidad de personas esperando en cada caja
+   int cajaMin;
+   int caja;
+   int idC;
+   
+   while(true) {
+     receive solicitarMínimo(idC); //espera a que alguien le pida caja mínima
+     
+     while (not empty fin) { //verifico que cajas atendieron recientemnte
+         receive atendí(caja);
+         esperando(caja) --; //decremento personas esperando en "caja"
+     }
+
+     cajaMin = mínimo(esperando); //devuelve posición con caja con menos personas esperando
+     send enviarMinimo[idC](cajaMin); //envia nro de caja con minimo
+  }
+ 
+}
+
+Process Caja [id: 0..4] {
+   int idC;
+   string resultado;
+   while(true) {
+     receive atencion[id] (idC); //esperan que haya alguien esperando
+     send atendí (id); //le avisa al coordinador que atendio a alguien nuevo
+                       //para que el coord. decremente personas esperando
+     atender();
+     resultado = generar();
+     send fin[idC] (resultado);
+  }
+}
