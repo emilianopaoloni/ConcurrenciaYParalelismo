@@ -1,0 +1,72 @@
+{PMA 3. Se debe modelar una casa de Comida Rápida, en el cual trabajan 2 cocineros y 3 
+vendedores. Además, hay C clientes que dejan un pedido y quedan esperando a que se lo 
+alcancen.  
+Los pedidos que hacen los clientes son tomados por cualquiera de los vendedores y se lo 
+pasan a los cocineros para que realicen el plato. Cuando no hay pedidos para atender, los 
+vendedores aprovechan para reponer un pack de bebidas de la heladera (tardan entre 1 y 3 
+minutos para hacer esto). 
+Repetidamente cada cocinero toma un pedido pendiente dejado por los vendedores, lo 
+cocina y se lo entrega directamente al cliente correspondiente. 
+Nota: maximizar la concurrencia.}
+
+Chan Pedidos (int, string); // cliente envia id y pedido
+Chan PlatoPedir (int, string); //se envia id cliente y plato (los vendedores a los cocineros)
+Chan PedidoEntregar[C] (plato); //cocineros entregan plato al cliente
+Chan Siguiente[3] (int, string); //un canal para cada vendedor
+Chan Atender(int); //canal para que se comuniquen vendedor con admin
+
+
+Process Cliente [id: 0..C-1] {
+  string pedido=...; //valor conocido por cliente
+  plato p
+  send Pedido(pedido); //realiza el pedido
+  receive PedidoEntregar[id](p); //espera que le entregen el pedido en su canal privado
+}
+
+Process AdminPedidos { //este proceso se va a encargar de recibir los pedidos por el unico canal 
+  //es el UNICO proceso que verifica si hay pedidos por el canal Pedidos
+  int idV; //id del vendedor
+  int idC;
+  string plato
+  
+  while (true) {
+     receive Atender (idV); //espera solicitud de empleado
+     if (empty (Pedidos)) { //no hay pedidos
+          plato="VACIO"; //indico en plato que no hay pedidos
+          idC=0; //solo inicializo
+          }
+     else receive Pedidos(idC, plato); //hay pedidos, toma id cliente y plato que pide
+          
+     send Siguiente[idV] (idC, plato); //le envia al vendedor el siguiente pedido
+
+}
+
+
+//el vendedor le pide el siguiente pedido al Admin
+//el Admin le va a responder siempre al Vendedor, haya o no haya pedidos:
+
+Process Vendedor [id: 0..2] {
+  int idC;
+  string platoPedido;
+ 
+  while(true){
+        send Atender(id); //envia su id al admin
+        receive Siguiente[id] (idC, platoPedido); //espera respuesta de admin
+        if (platoPedido <> "VACIO") { //verifica que haya algun pedido
+             //hay pedido para atender
+             send PlatoPedir(idC, platoPedido); //envia pedido a cocineros
+        }
+        else delay(300); //no hay pedido para atender, repone stock de bebidas 
+  }
+}
+
+Process Cocinero [id: 0..1] {
+  int idC;
+  string platoPedido;
+  plato p;
+  while(true) {
+    receive PlatoPedir(idC, platoPedido); //toma pedido
+    p = cocinar(platoPedido); //cocina el plato
+    send PedidoEntregar[idC] (p); //entrega el plato al cliente
+  }
+}
