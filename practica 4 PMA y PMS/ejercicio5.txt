@@ -1,0 +1,48 @@
+{PMA 5. Resolver la administración de las impresoras de una oficina. Hay 3 impresoras, N usuarios y 
+1 director. Los usuarios y el director están continuamente trabajando y cada tanto envían 
+documentos a imprimir. Cada impresora, cuando está libre, toma un documento y lo 
+imprime, de acuerdo al orden de llegada, pero siempre dando prioridad a los pedidos del 
+director. Nota: los usuarios y el director no deben esperar a que se imprima el documento.}
+
+Chan ImprimirUsuario(texto);
+Chan ImprimirDirector(texto);
+
+Process usuario [id: 0..N-1] {
+  texto doc;
+   while (true) {
+     doc = generarDocumento();
+     send ImprimirUsuario(doc); //envia a imprimir el documento
+   }
+}
+
+Process director {
+   texto doc;
+   while (true) {
+     doc = generarDocumento();
+     send ImprimirDirector(doc); //envia a imprimir el documento
+   }
+}
+
+Process coordinador { //este proceso se encarga de coordinar los pedidos para imprimir
+  texto doc;
+  int idI;
+  while (true) {
+     receive Pedido(idI); //espera que alguna impresora le pida el siguiente
+     if not empty(ImprimirDirector) {
+         receive ImprimirDirector(doc); 
+         send Siguiente[idI](doc); //envia a imprimir pedido de director
+     }else {
+         receive ImprimirUsuario(doc);
+         send Siguiente[idI](doc); //envia a imprimir pedido de usuario
+     }
+  }   
+}
+
+Process impresora [id: 0..2 ] {
+    texto doc;
+    while(true) {
+       send Pedido(id); //pide un doc para imprimir
+       receive Siguiente[id](doc);
+       imprimir(doc);
+    }
+}
