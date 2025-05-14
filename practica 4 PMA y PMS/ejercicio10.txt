@@ -1,0 +1,61 @@
+{PMS 10. Resolver con PMS (Pasaje de Mensajes SINCRÓNICOS) el siguiente problema. En un 
+estadio de fútbol hay una máquina expendedora de gaseosas que debe ser usada por E 
+Espectadores de acuerdo al orden de llegada. Cuando el espectador accede a la máquina en 
+su turno usa la máquina y luego se retira para dejar al siguiente. Nota: cada Espectador una 
+sólo una vez la máquina }
+
+Process Espectador [id: 0..E-1] {
+   Buffer!llegada(id);
+   Maquina?usar(); //espera su turno
+   --usa la maquina
+   Maquina!fin();
+}
+
+Process Buffer { //este proceso gestiona el orden de llegada 
+   cola Buffer;
+   int idE;
+
+   do  Espectador[*]?llegada(idE) -->  push(Buffer, idE);
+
+    □ not empty (Buffer); Maquina?pedido() --> Maquina!siguiente(pop(Buffer)); //envia próximo a empleado
+   od
+
+}
+
+Process Maquina {
+  int idE;
+  while(true){
+    Buffer!pedido(); //le pide el próximo al buffer
+    Buffer?siguiente(idE);
+    Persona[idE]!.usar(); //le manda mensaje para que use la maquina
+    Persona[idE]?.fin(); //espera que la persona finalice
+   
+  }
+
+
+-----------------------------------------------------------------------------------------------
+Otra forma de hacerlo:
+
+//SI se quiere, se podría usar directamente los procesos espectador, y maquina (eliminando el proceso buffer)
+//haciendo que directamente el proceso maquina tenga una cola, y administre la llegada de las personas a la vez que el uso:
+
+Process Espectador [id: 0..E-1] {
+   Maquina!llegada(id);
+   Maquina?usar(); // espera su turno
+   // usa la máquina
+   Maquina!fin();
+}
+
+Process Maquina {
+   cola Buffer;
+   int idE;
+
+   do
+     Espectador[*]?llegada(id) → push(Buffer, id);
+   □ not empty(Buffer); →
+       idE = pop(Buffer);
+       Espectador[idE]!usar();
+       Espectador[idE]?fin();
+   od
+}
+

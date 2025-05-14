@@ -1,0 +1,57 @@
+{PMS 8. Resolver con PMS (Pasaje de Mensajes SINCRÓNICOS) el siguiente problema. En un 
+examen final hay P alumnos y 3 profesores. Cuando todos los alumnos han llegado 
+comienza el examen. Cada alumno resuelve su examen, lo entrega y espera a que alguno de 
+los profesores lo corrija y le indique la nota. Los profesores corrigen los exámenes 
+respectando el orden en que los alumnos van entregando. Nota: maximizar la concurrencia 
+y no generar demora innecesaria. }
+
+
+Process Alumno [id:0..P-1] {
+   String e; //examen
+   Admin!llegada(); //avisa que llego
+   Admin?comenzar(); //espera que le avisen que comienza el examen
+   //comienza el examen:
+   resolverExamen(e);
+   Admin!examen(e,id); //envia examen y su id
+   Profesor[*]?resultado(r); //espera resultado
+}
+
+Process Admin {
+  int idA; //id alumno
+  int idP; //id profesor
+  string e;
+  cola Buffer(string,int);
+  int cantAlu=0;
+  bool examenIniciado=false;
+
+  do cantAlu < P;  Alumno[*]?llegada() --> 
+                                      cantAlu++;
+                                     if (cantidadAlu == P) and not (examenIniciado) {
+                                            examenIniciado = true;
+                                            for i in 0..P-1 {
+                                            Alumno[i]!comenzar(); //envio mensaje de comienzo a cada alumno
+                                             }
+                                      }
+                   
+
+  □ examenIniciado; Alumno?examen(e, idA) --> push(Buffer,(e,idA) );//recibe exmen de alumno y lo apila en el buffer
+     
+  □ examenIniciado and not empty(Buffer); Profesor?pedido(idP) -->
+                                  pop(Buffer(e, idA)); //desencolo 
+                                  Profesor[idP]!examen(e, idA); //envia un examen con el id de alumno al profesor idP
+
+  od
+
+}
+
+Process Profesor [id:0..2] {
+   int idA;
+   int res;
+   int examen;
+   while(true){
+      Admin!pedido(id); //pide un examen al admin
+      Admin?examen(examen, idA); //espera envio de admin
+      res = corregir(examen);
+      Alumno[idA]!resultado(res); //envia resultado a alumno  
+   }
+}

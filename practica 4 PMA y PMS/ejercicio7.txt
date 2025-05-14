@@ -1,0 +1,34 @@
+{PMS 7. Suponga que existe un antivirus distribuido en él hay R procesos robots que continuamente 
+están buscando posibles sitios web infectados; cada vez que encuentran uno avisan la 
+dirección y continúan buscando. Hay un proceso analizador que se encargue de hacer todas 
+las pruebas necesarias con cada uno de los sitios encontrados por los robots para 
+determinar si están o no infectados }
+
+Process Robot [id: 0..R-1] {
+   string dirección; //dir de sitio web infectado
+   while(true) {
+     buscarWeb(dirección);
+     Admin!direccion(dirección);
+   }
+}
+
+Admin {
+  cola Buffer;
+  string d;
+  
+  do  [*]Robot?direccion(d) --> push(Buffer,d); //recibe una dirección de un robot y la guarda en el buffer
+      
+     not empty(Buffer); Analizador?pedido() --> 
+                       Analizador!dirección(pop(Buffer)); //recibe pedido de analiz. y le envia direccion
+  od
+}
+
+Process Analizador {
+  string d; 
+  while(true) {
+    Admin!pedido(); //le pide al Admin que le envie una dirección para analizar
+    Admin?direccion(d); //recibe direccion
+    RealizarPrueba(d);
+  }
+
+}

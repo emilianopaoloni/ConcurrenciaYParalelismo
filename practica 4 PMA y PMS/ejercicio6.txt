@@ -1,0 +1,52 @@
+{PMS 6. En un laboratorio de genética veterinaria hay 3 empleados. El primero de ellos se encarga 
+de preparar las muestras de ADN lo más rápido posible; el segundo toma cada muestra de 
+ADN preparada y arma el set de análisis que se deben realizar con ella y espera el resultado 
+para archivarlo y continuar trabajando; el tercer empleado se encarga de realizar el análisis y 
+devolverle el resultado al segundo empleado. }
+
+3 empleados:
+
+empleado 1: preparar las muestras de ADN
+empleado 2: toma muestras de adn (de empleado 1) arma set de análisis y espera resultado (de empleado 3) para continuar
+empleado 3: toma el set de análisis (de empleado 2), lo realiza y le devuelve el resultado (al empleado 2)
+
+Process Empleado1 {
+    Muestra m;
+    while(true){
+      m = prepararMuestra();
+      Admin!muestra(m); //envia muestra a Admin y continua trabajando
+    }
+}
+
+Process Admin { //este proceso va a contener un buffer para que el e1 pueda dejar las muestras y continuar trabajando
+    cola Buffer;
+    Muestra m;
+  
+    do Empleado1?muestra(m) --> push(Buffer, m); //recibe muestra de empleado 1 y la guarda en el buffer
+       not empty (Buffer); Empleado2?pedido() --> 
+                      Empleado2!muestra(pop(Buffer)); //cuando e2 hace el pedido, le envia una muestra del buffer
+    od
+}
+
+Process Empleado2 {
+    Muestra m;
+    Set s;
+    Resultado r;
+    while(true){
+      Admin!pedido();    //le pide una muestra a Admin
+      Admin?muestra(m); //espera que Admin le envie muestra
+      s = armarSet(m);  //crea el set de analisis
+      Empleado3!set(s); //envia set a e3
+      Empleado3?resultado(r); //espera que e3 le envie el resultado del analisis
+   }
+}
+
+Process Empleado3 {
+    Set s;
+    Resultado r;
+    while(true) {
+      Empleado2?set(s); //recibe set de empleado 2
+      r = realizarAnalisis(s); //realiza el análisis y genera un resultado
+      Empleado2!resultado(r);  //envia resultado a empleado 2
+    }
+}
